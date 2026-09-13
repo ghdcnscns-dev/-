@@ -14,8 +14,8 @@
             --text-main: #e0e6ed;
             --text-sub: #8bacb7;
             --button-bg: #1c2a38;
-            --button-active-bg: #c17830;
             --input-bg: #162430;
+            --danger-color: #d9534f;
         }
 
         * {
@@ -75,7 +75,6 @@
             cursor: pointer;
         }
 
-        /* 공통 카드 스타일 */
         .section-box {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -84,11 +83,17 @@
             margin-bottom: 16px;
         }
 
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
         .section-title {
             font-size: 15px;
             font-weight: bold;
             color: var(--accent-color);
-            margin-bottom: 6px;
         }
 
         .section-desc {
@@ -124,8 +129,8 @@
             color: #fff;
         }
 
-        /* 플레이어 설정 행 */
-        .player-config-row {
+        /* 플레이어 및 단계 설정 행 */
+        .config-row {
             display: flex;
             align-items: center;
             background-color: var(--input-bg);
@@ -140,15 +145,54 @@
             width: 14px;
             height: 14px;
             border-radius: 50%;
+            flex-shrink: 0;
         }
 
-        .player-name-input {
+        .config-input {
             flex: 1;
             background: transparent;
             border: none;
             color: var(--text-main);
             font-size: 14px;
             outline: none;
+        }
+
+        .btn-small {
+            background-color: var(--button-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-sub);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-small-danger {
+            background-color: #3b1c1c;
+            border: 1px solid #5a2c2c;
+            color: #ff8080;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-outline-accent {
+            background-color: transparent;
+            border: 1px dashed var(--accent-color);
+            color: var(--accent-color);
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .btn-outline-accent:hover {
+            background-color: rgba(212, 163, 115, 0.05);
         }
 
         /* 하단 시작/진행 버튼 */
@@ -218,10 +262,6 @@
             justify-content: center;
         }
 
-        .step-btn:active {
-            background-color: var(--card-border);
-        }
-
         .score-input {
             background-color: var(--input-bg);
             border: 1px solid var(--card-border);
@@ -235,7 +275,6 @@
             outline: none;
         }
 
-        /* 하단 네비게이션 (이전 / 다음) */
         .nav-button-group {
             display: flex;
             gap: 10px;
@@ -255,13 +294,14 @@
             text-align: center;
         }
 
-        /* 실시간 합계 바 */
         .live-score-bar {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 8px;
             padding: 10px;
             display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
             justify-content: space-around;
             font-size: 12px;
             color: var(--text-sub);
@@ -273,7 +313,6 @@
             font-weight: bold;
         }
 
-        /* 결과 화면 스타일 */
         .ranking-card {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -308,7 +347,6 @@
 <body>
 
 <div class="container">
-    <!-- 헤더 -->
     <header>
         <div>
             <span class="title-area">보드게임 점수 계산기</span>
@@ -322,17 +360,23 @@
         <div class="section-box">
             <div class="section-title">참여 인원</div>
             <div class="section-desc">게임에 참여할 인원수를 선택하십시오. (최대 5명)</div>
-            <div class="player-count-grid" id="player-count-buttons">
-                <!-- 동적 생성됨 -->
-            </div>
+            <div class="player-count-grid" id="player-count-buttons"></div>
         </div>
 
         <div class="section-box">
-            <div class="section-title">참여자 이름 등록</div>
-            <div class="section-desc">플레이어의 이름과 색상을 지정하세요.</div>
-            <div id="player-config-list">
-                <!-- 동적 생성됨 -->
+            <div class="section-header-row">
+                <div class="section-title">참여자 이름 등록</div>
+                <button class="btn-small" onclick="resetPlayerNames()">이름 초기화</button>
             </div>
+            <div class="section-desc">플레이어의 이름을 지정하세요. (인원 변경 시에도 이름이 유지됩니다)</div>
+            <div id="player-config-list"></div>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title">점수 입력 단계 설정</div>
+            <div class="section-desc">진행할 단계를 추가하거나 삭제할 수 있습니다.</div>
+            <div id="step-config-list"></div>
+            <button class="btn-outline-accent" onclick="addStepConfig()">+ 단계 추가</button>
         </div>
 
         <button class="btn-primary" onclick="startCalculator()">점수 계산 시작</button>
@@ -346,14 +390,9 @@
             <div id="step-desc" class="section-desc">해당 항목의 점수를 입력하세요.</div>
         </div>
 
-        <!-- 실시간 점수 요약 바 -->
-        <div class="live-score-bar" id="live-score-bar">
-            <!-- 동적 생성됨 -->
-        </div>
+        <div class="live-score-bar" id="live-score-bar"></div>
 
-        <div id="player-score-inputs">
-            <!-- 동적 생성됨 -->
-        </div>
+        <div id="player-score-inputs"></div>
 
         <div class="nav-button-group">
             <button class="btn-secondary" onclick="prevStep()">이전</button>
@@ -368,9 +407,7 @@
             <div class="section-desc">모든 단계의 점수가 합산된 결과입니다.</div>
         </div>
 
-        <div id="ranking-list">
-            <!-- 동적 생성됨 -->
-        </div>
+        <div id="ranking-list"></div>
 
         <button class="btn-primary" onclick="resetApp()">다시 시작하기</button>
     </div>
@@ -379,13 +416,14 @@
 </div>
 
 <script>
-    // 설정 데이터
     const playerColors = ['#ff6b6b', '#4dabf7', '#51cf66', '#fcc419', '#cc5de8'];
+    const numberWords = ["하나", "둘", "셋", "넷", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
+
     let playerCount = 2;
     let currentStep = 0;
     
-    // 6단계 구성 ("하나" ~ "여섯")
-    const steps = [
+    // 기본 6단계 구성
+    let steps = [
         { title: "하나. 첫 번째 단계", desc: "첫 번째 점수 항목의 점수를 입력하세요." },
         { title: "둘. 두 번째 단계", desc: "두 번째 점수 항목의 점수를 입력하세요." },
         { title: "셋. 세 번째 단계", desc: "세 번째 점수 항목의 점수를 입력하세요." },
@@ -394,15 +432,16 @@
         { title: "여섯. 여섯 번째 단계", desc: "여섯 번째 점수 항목의 점수를 입력하세요." }
     ];
 
+    // 플레이어 데이터 배열 (이름 유지를 위해 별도 관리)
+    let playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
     let players = [];
 
-    // 초기화 실행
     window.onload = function() {
         renderPlayerCountButtons();
         renderPlayerConfigInputs();
+        renderStepConfigInputs();
     };
 
-    // 인원수 선택 버튼 렌더링 (1명 ~ 5명)
     function renderPlayerCountButtons() {
         const container = document.getElementById('player-count-buttons');
         container.innerHTML = '';
@@ -411,6 +450,7 @@
             btn.className = `pc-btn ${i === playerCount ? 'active' : ''}`;
             btn.innerText = `${i}명`;
             btn.onclick = () => {
+                saveCurrentConfigInputs(); // 인원 변경 전 현재 입력 중인 이름 저장
                 playerCount = i;
                 renderPlayerCountButtons();
                 renderPlayerConfigInputs();
@@ -419,28 +459,91 @@
         }
     }
 
-    // 플레이어 설정 입력폼 렌더링
     function renderPlayerConfigInputs() {
+        saveCurrentConfigInputs();
         const container = document.getElementById('player-config-list');
         container.innerHTML = '';
         for (let i = 0; i < playerCount; i++) {
             const row = document.createElement('div');
-            row.className = 'player-config-row';
+            row.className = 'config-row';
             row.innerHTML = `
                 <div class="color-dot" style="background-color: ${playerColors[i]}"></div>
-                <input type="text" class="player-name-input" id="p-name-${i}" value="플레이어 ${i + 1}" placeholder="플레이어 ${i + 1} 이름">
+                <input type="text" class="config-input" id="p-name-${i}" value="${playerNames[i]}" placeholder="플레이어 ${i + 1} 이름">
             `;
             container.appendChild(row);
         }
     }
 
+    // 플레이어 이름만 기본값으로 초기화하는 기능
+    function resetPlayerNames() {
+        playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
+        renderPlayerConfigInputs();
+    }
+
+    // 설정 화면에서 변경한 이름을 배열에 동기화
+    function saveCurrentConfigInputs() {
+        for (let i = 0; i < 5; i++) {
+            const input = document.getElementById(`p-name-${i}`);
+            if (input) {
+                playerNames[i] = input.value || `플레이어 ${i + 1}`;
+            }
+        }
+        
+        // 단계 이름도 동기화
+        for (let i = 0; i < steps.length; i++) {
+            const input = document.getElementById(`step-title-${i}`);
+            if (input) {
+                steps[i].title = input.value || `${numberWords[i] || (i+1)} 단계`;
+            }
+        }
+    }
+
+    // 단계 설정 목록 렌더링
+    function renderStepConfigInputs() {
+        const container = document.getElementById('step-config-list');
+        container.innerHTML = '';
+        steps.forEach((step, index) => {
+            const row = document.createElement('div');
+            row.className = 'config-row';
+            row.innerHTML = `
+                <span style="font-size: 12px; font-weight: bold; color: var(--accent-color); width: 24px;">${index + 1}</span>
+                <input type="text" class="config-input" id="step-title-${index}" value="${step.title}" placeholder="단계 이름 입력">
+                ${steps.length > 1 ? `<button class="btn-small-danger" onclick="removeStepConfig(${index})">삭제</button>` : ''}
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    // 단계 추가
+    function addStepConfig() {
+        saveCurrentConfigInputs();
+        const newIdx = steps.length;
+        const prefix = numberWords[newIdx] || `${newIdx + 1}번째`;
+        steps.push({
+            title: `${prefix}. 새로운 단계`,
+            desc: "해당 항목의 점수를 입력하세요."
+        });
+        renderStepConfigInputs();
+    }
+
+    // 단계 삭제
+    function removeStepConfig(index) {
+        saveCurrentConfigInputs();
+        if (steps.length <= 1) {
+            alert("최소 1개의 단계는 유지되어야 합니다.");
+            return;
+        }
+        steps.splice(index, 1);
+        renderStepConfigInputs();
+    }
+
     // 계산기 시작
     function startCalculator() {
+        saveCurrentConfigInputs();
         players = [];
         for (let i = 0; i < playerCount; i++) {
-            const nameInput = document.getElementById(`p-name-${i}`).value;
             players.push({
-                name: nameInput || `플레이어 ${i + 1}`,
+                name: playerNames[i],
                 color: playerColors[i],
                 scores: new Array(steps.length).fill(0)
             });
@@ -451,13 +554,11 @@
         renderStep();
     }
 
-    // 단계 렌더링
     function renderStep() {
         document.getElementById('step-counter').innerText = `${currentStep + 1} / ${steps.length}`;
         document.getElementById('step-title').innerText = steps[currentStep].title;
         document.getElementById('step-desc').innerText = steps[currentStep].desc;
 
-        // 다음 버튼 텍스트 변경 (마지막 단계면 결과보기)
         const nextBtn = document.getElementById('next-btn');
         if (currentStep === steps.length - 1) {
             nextBtn.innerText = "결과 보기";
@@ -469,7 +570,6 @@
         renderScoreInputs();
     }
 
-    // 실시간 요약 바 렌더링
     function renderLiveScoreBar() {
         const bar = document.getElementById('live-score-bar');
         bar.innerHTML = '';
@@ -482,7 +582,6 @@
         });
     }
 
-    // 점수 입력 입력란 렌더링
     function renderScoreInputs() {
         const container = document.getElementById('player-score-inputs');
         container.innerHTML = '';
@@ -505,23 +604,20 @@
         });
     }
 
-    // 점수 가감 기능
     function adjustScore(playerIdx, amount) {
         players[playerIdx].scores[currentStep] += amount;
         document.getElementById(`score-input-${playerIdx}`).value = players[playerIdx].scores[currentStep];
         renderLiveScoreBar();
     }
 
-    // 인풋 직접 수정 시 반영
     function updateScoreValue(playerIdx, value) {
         const val = parseInt(value);
         players[playerIdx].scores[currentStep] = isNaN(val) ? 0 : val;
         renderLiveScoreBar();
     }
 
-    // 이전 단계
     function prevStep() {
-        saveCurrentInputs();
+        saveCurrentScoreInputs();
         if (currentStep > 0) {
             currentStep--;
             renderStep();
@@ -531,9 +627,8 @@
         }
     }
 
-    // 다음 단계
     function nextStep() {
-        saveCurrentInputs();
+        saveCurrentScoreInputs();
         if (currentStep < steps.length - 1) {
             currentStep++;
             renderStep();
@@ -542,20 +637,17 @@
         }
     }
 
-    // 입력값 일괄 저장
-    function saveCurrentInputs() {
+    function saveCurrentScoreInputs() {
         players.forEach((p, index) => {
             const val = parseInt(document.getElementById(`score-input-${index}`).value);
             p.scores[currentStep] = isNaN(val) ? 0 : val;
         });
     }
 
-    // 결과 화면 표시
     function showResult() {
         document.getElementById('calculator-screen').classList.add('hidden');
         document.getElementById('result-screen').classList.remove('hidden');
 
-        // 총점 기준 정렬
         const rankedPlayers = [...players].map(p => {
             return {
                 ...p,
@@ -584,14 +676,14 @@
         });
     }
 
-    // 초기 화면으로 리셋
     function resetApp() {
         document.getElementById('result-screen').classList.add('hidden');
         document.getElementById('calculator-screen').classList.add('hidden');
         document.getElementById('setup-screen').classList.remove('hidden');
-        playerCount = 2;
+        currentStep = 0;
         renderPlayerCountButtons();
         renderPlayerConfigInputs();
+        renderStepConfigInputs();
     }
 </script>
 
