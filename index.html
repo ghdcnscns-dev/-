@@ -238,7 +238,7 @@
         .stepper-controls {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .step-btn {
@@ -250,6 +250,20 @@
             border-radius: 6px;
             font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-mini-calc {
+            background-color: #1a333a;
+            border: 1px solid #29505c;
+            color: #70c1b3;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            font-size: 13px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -396,8 +410,8 @@
             display: none;
         }
 
-        /* 저장 기록 모달 스타일 */
-        #history-modal {
+        /* 공통 모달 스타일 (저장 기록 & 미니 계산기) */
+        .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
@@ -425,6 +439,67 @@
             flex: 1;
             margin-top: 10px;
             margin-bottom: 10px;
+        }
+
+        /* 미니 계산기 전용 스타일 */
+        .mini-calc-content {
+            max-width: 300px;
+            border-color: #70c1b3;
+        }
+
+        .calc-display {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            outline: none;
+            letter-spacing: 1px;
+        }
+
+        .calc-keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .calc-btn {
+            background-color: var(--button-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 14px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .calc-btn:hover {
+            background-color: #243b4d;
+        }
+
+        .calc-btn.op {
+            background-color: #2b3e4a;
+            color: var(--accent-color);
+        }
+
+        .calc-btn.equals {
+            background-color: #7b4f1b;
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .calc-btn.clear {
+            background-color: #3b1c1c;
+            border-color: #5a2c2c;
+            color: #ff8080;
         }
 
         .history-item {
@@ -478,8 +553,10 @@
     <div id="setup-screen">
         <div class="section-box">
             <div class="section-title">참여 인원</div>
-            <div class="section-desc">게임에 참여할 인원수를 선택하십시오. (최대 5명)</div>
+            <div class="section-desc">게임에 참여할 인원수를 선택하거나 추가하십시오.</div>
             <div class="player-count-grid" id="player-count-buttons"></div>
+            <!-- 5명 이상일 때 인원 추가 버튼 표시 -->
+            <button id="add-player-btn" class="btn-outline-accent hidden" onclick="addNewPlayer()" style="margin-top: 10px;">+ 참여자 1명 추가</button>
         </div>
 
         <div class="section-box">
@@ -525,7 +602,7 @@
         
         <div class="winner-card">
             <div class="winner-badge-top">최종 승자</div>
-            <div style="font-size: 18px; font-weight: bold; margin: 6px 0;" id="winner-name-display">플레이어 1</div>
+            <div style="font-size: 18px; font-weight: bold; margin: 6px 0;" id="winner-name-display">모험가 1</div>
             <div style="font-size: 24px; font-weight: bold; color: var(--accent-color);" id="winner-score-display">0점</div>
         </div>
 
@@ -558,7 +635,7 @@
 </div>
 
 <!-- 저장 기록 보기 모달 -->
-<div id="history-modal" class="hidden">
+<div id="history-modal" class="modal-overlay hidden">
     <div class="modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
             <div style="font-weight: bold; color: var(--accent-color);">저장된 원정 기록</div>
@@ -571,11 +648,46 @@
     </div>
 </div>
 
+<!-- 미니 계산기 모달 -->
+<div id="mini-calc-modal" class="modal-overlay hidden">
+    <div class="modal-content mini-calc-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 10px;">
+            <div id="calc-player-title" style="font-weight: bold; color: #70c1b3; font-size: 14px;">미니 계산기</div>
+            <button class="btn-small" onclick="closeMiniCalc()">닫기</button>
+        </div>
+        <input type="text" id="calc-display" class="calc-display" readonly value="0">
+        <div class="calc-keypad">
+            <button class="calc-btn clear" onclick="calcClear()">C</button>
+            <button class="calc-btn op" onclick="calcAppend('/')">÷</button>
+            <button class="calc-btn op" onclick="calcAppend('*')">×</button>
+            <button class="calc-btn op" onclick="calcAppend('-')">-</button>
+            
+            <button class="calc-btn" onclick="calcAppend('7')">7</button>
+            <button class="calc-btn" onclick="calcAppend('8')">8</button>
+            <button class="calc-btn" onclick="calcAppend('9')">9</button>
+            <button class="calc-btn op" onclick="calcAppend('+')">+</button>
+
+            <button class="calc-btn" onclick="calcAppend('4')">4</button>
+            <button class="calc-btn" onclick="calcAppend('5')">5</button>
+            <button class="calc-btn" onclick="calcAppend('6')">6</button>
+            <button class="calc-btn equals" onclick="calcEvaluate()" style="grid-row: span 2; height: auto;">=</button>
+
+            <button class="calc-btn" onclick="calcAppend('1')">1</button>
+            <button class="calc-btn" onclick="calcAppend('2')">2</button>
+            <button class="calc-btn" onclick="calcAppend('3')">3</button>
+
+            <button class="calc-btn" onclick="calcAppend('0')" style="grid-column: span 2;">0</button>
+            <button class="calc-btn" onclick="calcAppend('.')">.</button>
+        </div>
+        <button class="btn-primary" style="margin-top: 12px; background: linear-gradient(135deg, #16333b, #1d4d59); border-color: #29505c;" onclick="calcApplyAndClose()">점수 반영</button>
+    </div>
+</div>
+
 <script>
-    const playerColors = ['#ff6b6b', '#4dabf7', '#51cf66', '#fcc419', '#cc5de8'];
+    const playerColors = ['#ff6b6b', '#4dabf7', '#51cf66', '#fcc419', '#cc5de8', '#ff922b', '#94d82d', '#20c997', '#339af0', '#845ef7'];
     const numberWords = ["하나", "둘", "셋", "넷", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
 
-    let playerCount = 2;
+    let playerCount = 5;
     let currentStep = 0;
     
     let steps = [
@@ -587,9 +699,12 @@
         { title: "여섯. 여섯 번째 단계", desc: "여섯 번째 점수 항목의 점수를 입력하세요." }
     ];
 
-    let playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
+    let playerNames = ["모험가 1", "모험가 2", "모험가 3", "모험가 4", "모험가 5"];
     let players = [];
     let uploadedImageBase64 = "";
+
+    // 미니 계산기 관련 상태 변수
+    let activeCalcPlayerIdx = null;
 
     window.onload = function() {
         renderPlayerCountButtons();
@@ -600,7 +715,9 @@
     function renderPlayerCountButtons() {
         const container = document.getElementById('player-count-buttons');
         container.innerHTML = '';
-        for (let i = 1; i <= 5; i++) {
+        
+        const maxDisplayCount = Math.max(5, playerCount);
+        for (let i = 1; i <= maxDisplayCount; i++) {
             const btn = document.createElement('button');
             btn.className = `pc-btn ${i === playerCount ? 'active' : ''}`;
             btn.innerText = `${i}명`;
@@ -612,6 +729,23 @@
             };
             container.appendChild(btn);
         }
+
+        const addBtn = document.getElementById('add-player-btn');
+        if (playerCount >= 5) {
+            addBtn.classList.remove('hidden');
+        } else {
+            addBtn.classList.add('hidden');
+        }
+    }
+
+    function addNewPlayer() {
+        saveCurrentConfigInputs();
+        playerCount++;
+        if (playerNames.length < playerCount) {
+            playerNames.push(`모험가 ${playerCount}`);
+        }
+        renderPlayerCountButtons();
+        renderPlayerConfigInputs();
     }
 
     function renderPlayerConfigInputs() {
@@ -619,26 +753,42 @@
         const container = document.getElementById('player-config-list');
         container.innerHTML = '';
         for (let i = 0; i < playerCount; i++) {
+            if (!playerNames[i]) {
+                playerNames[i] = `모험가 ${i + 1}`;
+            }
+            const color = playerColors[i % playerColors.length];
             const row = document.createElement('div');
             row.className = 'config-row';
             row.innerHTML = `
-                <div class="color-dot" style="background-color: ${playerColors[i]}"></div>
-                <input type="text" class="config-input" id="p-name-${i}" value="${playerNames[i]}" placeholder="플레이어 ${i + 1} 이름">
+                <div class="color-dot" style="background-color: ${color}"></div>
+                <input type="text" class="config-input" id="p-name-${i}" value="${playerNames[i]}" placeholder="모험가 ${i + 1} 이름">
+                ${i >= 5 ? `<button class="btn-small-danger" onclick="removePlayer(${i})">삭제</button>` : ''}
             `;
             container.appendChild(row);
         }
     }
 
+    function removePlayer(index) {
+        saveCurrentConfigInputs();
+        playerNames.splice(index, 1);
+        playerCount = Math.max(5, playerCount - 1);
+        renderPlayerCountButtons();
+        renderPlayerConfigInputs();
+    }
+
     function resetPlayerNames() {
-        playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
+        playerNames = [];
+        for (let i = 0; i < playerCount; i++) {
+            playerNames.push(`모험가 ${i + 1}`);
+        }
         renderPlayerConfigInputs();
     }
 
     function saveCurrentConfigInputs() {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < playerCount; i++) {
             const input = document.getElementById(`p-name-${i}`);
             if (input) {
-                playerNames[i] = input.value || `플레이어 ${i + 1}`;
+                playerNames[i] = input.value || `모험가 ${i + 1}`;
             }
         }
         for (let i = 0; i < steps.length; i++) {
@@ -691,7 +841,7 @@
         for (let i = 0; i < playerCount; i++) {
             players.push({
                 name: playerNames[i],
-                color: playerColors[i],
+                color: playerColors[i % playerColors.length],
                 scores: new Array(steps.length).fill(0)
             });
         }
@@ -742,6 +892,7 @@
                     <span>${p.name}</span>
                 </div>
                 <div class="stepper-controls">
+                    <button class="btn-mini-calc" onclick="openMiniCalc(${index})" title="미니 계산기">🧮</button>
                     <button class="step-btn" onclick="adjustScore(${index}, -1)">-</button>
                     <input type="number" class="score-input" id="score-input-${index}" value="${p.scores[currentStep]}" onchange="updateScoreValue(${index}, this.value)">
                     <button class="step-btn" onclick="adjustScore(${index}, 1)">+</button>
@@ -761,6 +912,64 @@
         const val = parseInt(value);
         players[playerIdx].scores[currentStep] = isNaN(val) ? 0 : val;
         renderLiveScoreBar();
+    }
+
+    /* 미니 계산기 관련 함수 */
+    function openMiniCalc(playerIdx) {
+        saveCurrentScoreInputs();
+        activeCalcPlayerIdx = playerIdx;
+        const currentVal = players[playerIdx].scores[currentStep];
+        document.getElementById('calc-display').value = currentVal;
+        document.getElementById('calc-player-title').innerText = `${players[playerIdx].name} - 미니 계산기`;
+        document.getElementById('mini-calc-modal').classList.remove('hidden');
+    }
+
+    function closeMiniCalc() {
+        document.getElementById('mini-calc-modal').classList.add('hidden');
+        activeCalcPlayerIdx = null;
+    }
+
+    function calcClear() {
+        document.getElementById('calc-display').value = '0';
+    }
+
+    function calcAppend(char) {
+        const display = document.getElementById('calc-display');
+        if (display.value === '0' && !isNaN(char)) {
+            display.value = char;
+        } else {
+            display.value += char;
+        }
+    }
+
+    function calcEvaluate() {
+        const display = document.getElementById('calc-display');
+        try {
+            // 안전한 수식 계산 (숫자와 연산자만 허용)
+            const sanitized = display.value.replace(/[^0-9+\-*/().]/g, '');
+            let result = Function(`'use strict'; return (${sanitized})`)();
+            if (isNaN(result) || !isFinite(result)) {
+                alert("올바르지 않은 수식입니다.");
+                return;
+            }
+            display.value = Number(result.toFixed(2));
+        } catch (e) {
+            alert("계산 오류가 발생했습니다.");
+        }
+    }
+
+    function calcApplyAndClose() {
+        calcEvaluate();
+        const displayVal = parseFloat(document.getElementById('calc-display').value);
+        if (!isNaN(displayVal) && activeCalcPlayerIdx !== null) {
+            players[activeCalcPlayerIdx].scores[currentStep] = displayVal;
+            const inputField = document.getElementById(`score-input-${activeCalcPlayerIdx}`);
+            if (inputField) {
+                inputField.value = displayVal;
+            }
+            renderLiveScoreBar();
+        }
+        closeMiniCalc();
     }
 
     function prevStep() {
@@ -786,8 +995,11 @@
 
     function saveCurrentScoreInputs() {
         players.forEach((p, index) => {
-            const val = parseInt(document.getElementById(`score-input-${index}`).value);
-            p.scores[currentStep] = isNaN(val) ? 0 : val;
+            const inputField = document.getElementById(`score-input-${index}`);
+            if (inputField) {
+                const val = parseInt(inputField.value);
+                p.scores[currentStep] = isNaN(val) ? 0 : val;
+            }
         });
     }
 
