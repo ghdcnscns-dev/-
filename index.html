@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>보드게임 점수 계산기</title>
+    <!-- 폭죽 효과를 위한 canvas-confetti 라이브러리 연동 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --bg-color: #0b131a;
@@ -65,7 +67,7 @@
             margin-left: 8px;
         }
 
-        .btn-save-record {
+        .btn-top-header {
             background-color: #1a2e3b;
             color: var(--accent-color);
             border: 1px solid #294458;
@@ -102,7 +104,6 @@
             margin-bottom: 14px;
         }
 
-        /* 인원 선택 버튼 */
         .player-count-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -129,7 +130,6 @@
             color: #fff;
         }
 
-        /* 플레이어 및 단계 설정 행 */
         .config-row {
             display: flex;
             align-items: center;
@@ -191,11 +191,6 @@
             text-align: center;
         }
 
-        .btn-outline-accent:hover {
-            background-color: rgba(212, 163, 115, 0.05);
-        }
-
-        /* 하단 시작/진행 버튼 */
         .btn-primary {
             width: 100%;
             background: linear-gradient(135deg, #2b1d11, #4a2c14);
@@ -215,7 +210,6 @@
             filter: brightness(1.1);
         }
 
-        /* 점수 입력 단계 화면 */
         .step-indicator {
             font-size: 14px;
             color: var(--accent-color);
@@ -313,22 +307,144 @@
             font-weight: bold;
         }
 
+        .winner-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .winner-badge-top {
+            background-color: #3b281a;
+            color: var(--accent-color);
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 8px;
+            border: 1px solid var(--accent-color);
+        }
+
         .ranking-card {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
             padding: 14px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .ranking-header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 8px;
         }
 
-        .rank-badge {
-            font-weight: bold;
-            font-size: 14px;
+        .badge-tag {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            margin-top: 4px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .comment-textarea {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            resize: none;
+            height: 60px;
+            outline: none;
+        }
+
+        .file-input-wrapper {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload-btn {
+            background-color: var(--button-bg);
+            border: 1px solid var(--card-border);
             color: var(--accent-color);
-            margin-right: 10px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #preview-img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 6px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        /* 저장 기록 모달 스타일 */
+        #history-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            flex: 1;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .history-item {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .btn-delete-item {
+            background-color: #3b1c1c;
+            border: 1px solid #5a2c2c;
+            color: #ff8080;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            float: right;
         }
 
         .hidden {
@@ -350,9 +466,12 @@
     <header>
         <div>
             <span class="title-area">보드게임 점수 계산기</span>
-            <span class="subtitle-area">도아깜몬</span>
+            <span class="subtitle-area">천상민</span>
         </div>
-        <button class="btn-save-record" onclick="resetApp()">처음으로</button>
+        <div>
+            <button class="btn-top-header" onclick="openHistoryModal()" style="margin-right: 4px;">저장 기록</button>
+            <button class="btn-top-header" onclick="resetApp()">처음으로</button>
+        </div>
     </header>
 
     <!-- 1단계: 설정 화면 -->
@@ -368,7 +487,7 @@
                 <div class="section-title">참여자 이름 등록</div>
                 <button class="btn-small" onclick="resetPlayerNames()">이름 초기화</button>
             </div>
-            <div class="section-desc">플레이어의 이름을 지정하세요. (인원 변경 시에도 이름이 유지됩니다)</div>
+            <div class="section-desc">플레이어의 이름을 지정하세요.</div>
             <div id="player-config-list"></div>
         </div>
 
@@ -402,17 +521,54 @@
 
     <!-- 3단계: 결과 화면 -->
     <div id="result-screen" class="hidden">
-        <div class="section-box" style="text-align: center; border-color: var(--accent-color);">
-            <div class="section-title" style="font-size: 18px;">🏆 최종 순위 발표 🏆</div>
-            <div class="section-desc">모든 단계의 점수가 합산된 결과입니다.</div>
+        <div style="font-size: 12px; color: var(--text-sub); margin-bottom: 8px;" id="result-date"></div>
+        
+        <div class="winner-card">
+            <div class="winner-badge-top">최종 승자</div>
+            <div style="font-size: 18px; font-weight: bold; margin: 6px 0;" id="winner-name-display">플레이어 1</div>
+            <div style="font-size: 24px; font-weight: bold; color: var(--accent-color);" id="winner-score-display">0점</div>
         </div>
 
         <div id="ranking-list"></div>
 
-        <button class="btn-primary" onclick="resetApp()">다시 시작하기</button>
+        <div class="section-box">
+            <div class="section-title" style="margin-bottom: 6px;">원정 한 줄 코멘트</div>
+            <div class="section-desc">이번 탐험 전체 소감을 적어보세요.</div>
+            <textarea class="comment-textarea" id="game-comment" placeholder="이번 탐험 전체 소감을 적어보세요 (예: 아슬아슬했던 전설의 탐험!)"></textarea>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title" style="margin-bottom: 6px;">원정 기념 사진 첨부</div>
+            <div class="section-desc">기념하고 싶은 사진을 업로드하세요.</div>
+            <div class="file-input-wrapper">
+                <label class="file-upload-btn">
+                    사진 파일 선택
+                    <input type="file" id="photo-file-input" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+                </label>
+                <span id="file-name-text" style="font-size: 12px; color: var(--text-sub);">선택된 파일 없음</span>
+            </div>
+            <img id="preview-img" alt="미리보기">
+        </div>
+
+        <button class="btn-primary" onclick="saveGameRecord()">원정 기록하기</button>
+        <button class="btn-secondary" onclick="resetApp()" style="width: 100%; margin-top: 10px;">새로운 모험 시작</button>
     </div>
 
     <div class="footer-info">Powered by Netlify</div>
+</div>
+
+<!-- 저장 기록 보기 모달 -->
+<div id="history-modal" class="hidden">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+            <div style="font-weight: bold; color: var(--accent-color);">저장된 원정 기록</div>
+            <div style="display: flex; gap: 6px;">
+                <button class="btn-small-danger" onclick="clearAllHistory()">전체 삭제</button>
+                <button class="btn-small" onclick="closeHistoryModal()">닫기</button>
+            </div>
+        </div>
+        <div class="modal-body" id="history-list-container"></div>
+    </div>
 </div>
 
 <script>
@@ -422,7 +578,6 @@
     let playerCount = 2;
     let currentStep = 0;
     
-    // 기본 6단계 구성
     let steps = [
         { title: "하나. 첫 번째 단계", desc: "첫 번째 점수 항목의 점수를 입력하세요." },
         { title: "둘. 두 번째 단계", desc: "두 번째 점수 항목의 점수를 입력하세요." },
@@ -432,9 +587,9 @@
         { title: "여섯. 여섯 번째 단계", desc: "여섯 번째 점수 항목의 점수를 입력하세요." }
     ];
 
-    // 플레이어 데이터 배열 (이름 유지를 위해 별도 관리)
     let playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
     let players = [];
+    let uploadedImageBase64 = "";
 
     window.onload = function() {
         renderPlayerCountButtons();
@@ -450,7 +605,7 @@
             btn.className = `pc-btn ${i === playerCount ? 'active' : ''}`;
             btn.innerText = `${i}명`;
             btn.onclick = () => {
-                saveCurrentConfigInputs(); // 인원 변경 전 현재 입력 중인 이름 저장
+                saveCurrentConfigInputs();
                 playerCount = i;
                 renderPlayerCountButtons();
                 renderPlayerConfigInputs();
@@ -474,13 +629,11 @@
         }
     }
 
-    // 플레이어 이름만 기본값으로 초기화하는 기능
     function resetPlayerNames() {
         playerNames = ["플레이어 1", "플레이어 2", "플레이어 3", "플레이어 4", "플레이어 5"];
         renderPlayerConfigInputs();
     }
 
-    // 설정 화면에서 변경한 이름을 배열에 동기화
     function saveCurrentConfigInputs() {
         for (let i = 0; i < 5; i++) {
             const input = document.getElementById(`p-name-${i}`);
@@ -488,8 +641,6 @@
                 playerNames[i] = input.value || `플레이어 ${i + 1}`;
             }
         }
-        
-        // 단계 이름도 동기화
         for (let i = 0; i < steps.length; i++) {
             const input = document.getElementById(`step-title-${i}`);
             if (input) {
@@ -498,7 +649,6 @@
         }
     }
 
-    // 단계 설정 목록 렌더링
     function renderStepConfigInputs() {
         const container = document.getElementById('step-config-list');
         container.innerHTML = '';
@@ -514,7 +664,6 @@
         });
     }
 
-    // 단계 추가
     function addStepConfig() {
         saveCurrentConfigInputs();
         const newIdx = steps.length;
@@ -526,7 +675,6 @@
         renderStepConfigInputs();
     }
 
-    // 단계 삭제
     function removeStepConfig(index) {
         saveCurrentConfigInputs();
         if (steps.length <= 1) {
@@ -537,7 +685,6 @@
         renderStepConfigInputs();
     }
 
-    // 계산기 시작
     function startCalculator() {
         saveCurrentConfigInputs();
         players = [];
@@ -648,6 +795,11 @@
         document.getElementById('calculator-screen').classList.add('hidden');
         document.getElementById('result-screen').classList.remove('hidden');
 
+        const now = new Date();
+        document.getElementById('result-date').innerText = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+
+        triggerConfetti();
+
         const rankedPlayers = [...players].map(p => {
             return {
                 ...p,
@@ -655,25 +807,159 @@
             };
         }).sort((a, b) => b.total - a.total);
 
+        document.getElementById('winner-name-display').innerText = rankedPlayers[0].name;
+        document.getElementById('winner-score-display').innerText = `${rankedPlayers[0].total}점`;
+
+        let stepWinners = [];
+        for (let sIdx = 0; sIdx < steps.length; sIdx++) {
+            let maxScore = -999999;
+            let topPlayerName = "";
+            players.forEach(p => {
+                if (p.scores[sIdx] > maxScore) {
+                    maxScore = p.scores[sIdx];
+                    topPlayerName = p.name;
+                }
+            });
+            stepWinners.push({ stepTitle: steps[sIdx].title, topName: topPlayerName, score: maxScore });
+        }
+
         const rankingList = document.getElementById('ranking-list');
         rankingList.innerHTML = '';
 
         rankedPlayers.forEach((p, idx) => {
+            let playerBestSteps = stepWinners.filter(sw => sw.topName === p.name);
+            let badgesHtml = '';
+            if (playerBestSteps.length > 0) {
+                playerBestSteps.forEach(bs => {
+                    badgesHtml += `
+                        <div class="badge-tag">
+                            <span>👑 ${bs.stepTitle}</span>
+                            <span style="color: var(--accent-color); font-weight: bold;">${bs.score}점</span>
+                        </div>
+                    `;
+                });
+            } else {
+                badgesHtml = `<div style="font-size: 11px; color: var(--text-sub); margin-top: 4px;">달성한 부문 1위 없음</div>`;
+            }
+
             const card = document.createElement('div');
             card.className = 'ranking-card';
             card.innerHTML = `
-                <div style="display: flex; align-items: center;">
-                    <div class="rank-badge">${idx + 1}위</div>
-                    <div class="color-dot" style="background-color: ${p.color}; margin-right: 10px;"></div>
-                    <div>
-                        <div style="font-weight: bold; font-size: 14px;">${p.name}</div>
-                        <div style="font-size: 11px; color: var(--text-sub);">상세 점수: ${p.scores.join(' / ')}</div>
+                <div class="ranking-header-row">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: bold; color: var(--accent-color);">${idx + 1}위</span>
+                        <div class="color-dot" style="background-color: ${p.color};"></div>
+                        <span style="font-weight: bold; font-size: 14px;">${p.name}</span>
                     </div>
+                    <div style="font-size: 15px; font-weight: bold; color: var(--accent-color);">${p.total}점</div>
                 </div>
-                <div style="font-size: 16px; font-weight: bold; color: var(--accent-color);">${p.total}점</div>
+                <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 4px;">부문별 최고 기록</div>
+                ${badgesHtml}
             `;
             rankingList.appendChild(card);
         });
+    }
+
+    function triggerConfetti() {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    }
+
+    function handleImageUpload(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById('file-name-text').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImageBase64 = e.target.result;
+                const preview = document.getElementById('preview-img');
+                preview.src = uploadedImageBase64;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function saveGameRecord() {
+        const comment = document.getElementById('game-comment').value;
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const rankedPlayers = [...players].map(p => ({
+            ...p,
+            total: p.scores.reduce((a, b) => a + b, 0)
+        })).sort((a, b) => b.total - a.total);
+
+        const gameRecord = {
+            date: dateStr,
+            winner: rankedPlayers[0].name,
+            winnerScore: rankedPlayers[0].total,
+            players: rankedPlayers,
+            steps: steps,
+            comment: comment,
+            image: uploadedImageBase64
+        };
+
+        let history = JSON.parse(localStorage.getItem('boardgame_history') || '[]');
+        history.unshift(gameRecord);
+        localStorage.setItem('boardgame_history', JSON.stringify(history));
+
+        alert("원정 기록이 성공적으로 저장되었습니다!");
+    }
+
+    function openHistoryModal() {
+        const modal = document.getElementById('history-modal');
+        renderHistoryList();
+        modal.classList.remove('hidden');
+    }
+
+    function renderHistoryList() {
+        const container = document.getElementById('history-list-container');
+        container.innerHTML = '';
+
+        let history = JSON.parse(localStorage.getItem('boardgame_history') || '[]');
+        if (history.length === 0) {
+            container.innerHTML = `<div style="text-align: center; color: var(--text-sub); padding: 20px; font-size: 13px;">저장된 기록이 없습니다.</div>`;
+        } else {
+            history.forEach((rec, idx) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <button class="btn-delete-item" onclick="deleteHistoryItem(${idx})">삭제</button>
+                    <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 4px;">${rec.date}</div>
+                    <div style="font-weight: bold; font-size: 13px; color: var(--accent-color); margin-bottom: 4px;">승자: ${rec.winner} (${rec.winnerScore}점)</div>
+                    <div style="font-size: 12px; color: var(--text-main); margin-bottom: 4px;">참가자: ${rec.players.map(p => `${p.name}(${p.total}점)`).join(', ')}</div>
+                    ${rec.comment ? `<div style="font-size: 12px; margin-top: 4px; color: var(--text-sub);">💬 "${rec.comment}"</div>` : ''}
+                    ${rec.image ? `<div style="margin-top: 6px;"><img src="${rec.image}" style="max-width:100%; max-height:100px; border-radius:4px;"></div>` : ''}
+                `;
+                container.appendChild(item);
+            });
+        }
+    }
+
+    function deleteHistoryItem(index) {
+        if (confirm("이 기록을 삭제하시겠습니까?")) {
+            let history = JSON.parse(localStorage.getItem('boardgame_history') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('boardgame_history', JSON.stringify(history));
+            renderHistoryList();
+        }
+    }
+
+    function clearAllHistory() {
+        if (confirm("모든 저장 기록을 삭제하시겠습니까?")) {
+            localStorage.removeItem('boardgame_history');
+            renderHistoryList();
+        }
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('history-modal').classList.add('hidden');
     }
 
     function resetApp() {
@@ -681,6 +967,10 @@
         document.getElementById('calculator-screen').classList.add('hidden');
         document.getElementById('setup-screen').classList.remove('hidden');
         currentStep = 0;
+        uploadedImageBase64 = "";
+        document.getElementById('game-comment').value = "";
+        document.getElementById('preview-img').style.display = 'none';
+        document.getElementById('file-name-text').innerText = "선택된 파일 없음";
         renderPlayerCountButtons();
         renderPlayerConfigInputs();
         renderStepConfigInputs();
